@@ -25,26 +25,22 @@ Instalación
     Clonar el repositorio
 
         git clone https://github.com/Heectorr90/in-time-control.git
-        cd tu-repo
+        cd in-time-control
 
     Instalar dependencias de PHP
         composer install
 
+    Configurar entorno
+        cp .env.example .env
+            Editar el archivo .env y configurar las credenciales de la base de datos.
+        php artisan key:generate
+
+    Ejecutar migraciones y seeders
+        php artisan migrate --seed
+
+
     Instalar dependencias de Node
         npm install
-
-Configurar variables de entorno
-
-    Copiar el archivo .env
-        DB_CONNECTION=mysql
-        DB_HOST=127.0.0.1
-        DB_PORT=3306
-        DB_DATABASE=inventario_in_time_control
-        DB_USERNAME=usuario "cambiar por tus datos"
-        DB_PASSWORD=contraseña "cambiar por tus datos"
-
-Migraciones y Seeders
-php artisan migrate --seed
 
 Ejecutar el proyecto
 
