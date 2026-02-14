@@ -30,7 +30,7 @@ class EquipoSeeder extends Seeder
 
         Equipo::create([
             'subcategoria_id' => 3,
-            'nombre' => 'Monitor Samsung 24"',
+            'nombre' => 'Monitor Samsung 24',
             'numero_serie' => 'SM24001',
             'estatus' => 'Activo',
             'notas' => 'Monitor asignado a área administrativa'
@@ -38,7 +38,7 @@ class EquipoSeeder extends Seeder
 
         Equipo::create([
             'subcategoria_id' => 1,
-            'nombre' => 'Monitor LG 27"',
+            'nombre' => 'Monitor LG 27',
             'numero_serie' => 'LG27002',
             'estatus' => 'Activo',
             'notas' => 'Monitor para diseño gráfico'
