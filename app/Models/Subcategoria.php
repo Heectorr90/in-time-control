@@ -26,4 +26,15 @@ class Subcategoria extends Model
     {
         return $this->hasMany(Equipo::class);
     }
+
+    protected static function booted()
+    {
+        static::creating(function ($sub) {
+
+            $max = self::where('categoria_hijo_id', $sub->categoria_hijo_id)
+                ->max('codigo');
+
+            $sub->codigo = $max ? $max + 1 : 1;
+        });
+    }
 }

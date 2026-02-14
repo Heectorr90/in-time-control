@@ -26,4 +26,15 @@ class CategoriaHijo extends Model
     {
         return $this->hasMany(Subcategoria::class);
     }
+
+    protected static function booted()
+    {
+        static::creating(function ($hijo) {
+
+            $max = self::where('categoria_padre_id', $hijo->categoria_padre_id)
+                ->max('codigo');
+
+            $hijo->codigo = $max ? $max + 1 : 1;
+        });
+    }
 }

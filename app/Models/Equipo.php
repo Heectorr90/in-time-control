@@ -37,45 +37,45 @@ class Equipo extends Model
         return $this->subcategoria->hijo->padre;
     }
 
+    public static function generarCodigo($subcategoria_id)
+    {
+        $subcategoria = Subcategoria::with('hijo.padre')
+            ->find($subcategoria_id);
+
+        if (!$subcategoria) {
+            throw new \Exception("Subcategoría no válida.");
+        }
+
+        $codigoPadre = $subcategoria->hijo->padre->codigo;
+        $codigoHijo  = $subcategoria->hijo->codigo;
+        $codigoSub   = $subcategoria->codigo;
+
+        $prefijoBase = $codigoPadre . $codigoHijo . $codigoSub;
+
+        // Completar hasta 10 caracteres
+        $prefijo = str_pad($prefijoBase, 10, '0', STR_PAD_RIGHT);
+
+        // Buscar último consecutivo
+        $ultimoEquipo = self::where('codigo_inventario', 'like', $prefijo . '-%')
+            ->orderByDesc('codigo_inventario')
+            ->first();
+
+        if ($ultimoEquipo) {
+            $ultimoConsecutivo = (int) substr($ultimoEquipo->codigo_inventario, -4);
+            $nuevoConsecutivo = $ultimoConsecutivo + 1;
+        } else {
+            $nuevoConsecutivo = 1;
+        }
+
+        $consecutivoFormateado = str_pad($nuevoConsecutivo, 4, '0', STR_PAD_LEFT);
+
+        return $prefijo . '-' . $consecutivoFormateado;
+    }
+
     protected static function booted()
     {
         static::creating(function ($equipo) {
-
-            // Cargar jerarquía completa
-            $subcategoria = Subcategoria::with('hijo.padre')
-                ->find($equipo->subcategoria_id);
-
-            if (!$subcategoria) {
-                throw new \Exception("Subcategoría no válida.");
-            }
-
-            $codigoPadre = $subcategoria->hijo->padre->codigo;
-            $codigoHijo  = $subcategoria->hijo->codigo;
-            $codigoSub   = $subcategoria->codigo;
-
-            // Concatenar
-            $prefijoBase = $codigoPadre . $codigoHijo . $codigoSub;
-
-            // Rellenar con ceros a la derecha hasta 10 dígitos
-            $prefijo = str_pad($prefijoBase, 10, '0', STR_PAD_RIGHT);
-
-            // Buscar último consecutivo por prefijo
-            $ultimoEquipo = self::where('codigo_inventario', 'like', $prefijo . '-%')
-                ->orderByDesc('codigo_inventario')
-                ->first();
-
-            if ($ultimoEquipo) {
-                $ultimoConsecutivo = (int) substr($ultimoEquipo->codigo_inventario, -4);
-                $nuevoConsecutivo = $ultimoConsecutivo + 1;
-            } else {
-                $nuevoConsecutivo = 1;
-            }
-
-            // Formatear consecutivo a 4 dígitos
-            $consecutivoFormateado = str_pad($nuevoConsecutivo, 4, '0', STR_PAD_LEFT);
-
-            // Asignar código final
-            $equipo->codigo_inventario = $prefijo . '-' . $consecutivoFormateado;
+            $equipo->codigo_inventario = self::generarCodigo($equipo->subcategoria_id);
         });
     }
 }
