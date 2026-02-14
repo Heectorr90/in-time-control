@@ -24,6 +24,9 @@ new class extends Component
     public $estatus = 'Activo';
     public $notas = '';
     public $editingId = null;
+    public $filter_padre_id;
+    public $filter_hijo_id;
+    public $filter_subcategoria_id;
 
     protected $rules = [
         'categoria_padre_id' => 'required',
@@ -48,6 +51,16 @@ new class extends Component
     public function updatedCategoriaHijoId()
     {
         $this->reset(['subcategoria_id']);
+    }
+
+    public function updatedFilterPadreId()
+    {
+        $this->reset(['filter_hijo_id', 'filter_subcategoria_id']);
+    }
+
+    public function updatedFilterHijoId()
+    {
+        $this->reset(['filter_subcategoria_id']);
     }
 
     // Métodos para abrir y cerrar el modal, y resetear el formulario
@@ -156,13 +169,26 @@ new class extends Component
     public function getEquiposProperty()
     {
         return Equipo::with('subcategoria.hijo.padre')
-            ->when($this->search, function ($query) {
-                $query->where(function ($q) {
-                    $q->where('codigo_inventario', 'like', "%{$this->search}%")
-                      ->orWhere('nombre', 'like', "%{$this->search}%");
-                });
-            })
-            ->paginate(5);
+        ->when($this->search, function ($query) {
+            $query->where(function ($q) {
+                $q->where('codigo_inventario', 'like', "%{$this->search}%")
+                  ->orWhere('nombre', 'like', "%{$this->search}%");
+            });
+        })
+        ->when($this->filter_padre_id, function ($query) {
+            $query->whereHas('subcategoria.hijo.padre', function ($q) {
+                $q->where('id', $this->filter_padre_id);
+            });
+        })
+        ->when($this->filter_hijo_id, function ($query) {
+            $query->whereHas('subcategoria.hijo', function ($q) {
+                $q->where('id', $this->filter_hijo_id);
+            });
+        })
+        ->when($this->filter_subcategoria_id, function ($query) {
+            $query->where('subcategoria_id', $this->filter_subcategoria_id);
+        })
+        ->paginate(5);
     }
 
     public function getPadresProperty()
@@ -196,11 +222,48 @@ new class extends Component
 
             <button
                 wire:click="open"
-                class="bg-blue-600 text-white px-4 py-2 rounded-lg"
+                class="bg-blue-600 text-white px-4 py-2 rounded-lg whitespace-nowrap"
             >
                 + Crear Equipo
             </button>
-            </div>
+        </div>
+        <div class="flex gap-2 mb-4">
+
+            {{-- Filtro Padre --}}
+            <select wire:model.live="filter_padre_id"
+                class="border rounded px-3 py-2">
+                <option value="">Todas las Categorías Padre</option>
+                @foreach($this->padres as $padre)
+                    <option value="{{ $padre->id }}">{{ $padre->nombre }}</option>
+                @endforeach
+            </select>
+
+            {{-- Filtro Hijo --}}
+            <select wire:model.live="filter_hijo_id"
+                class="border rounded px-3 py-2"
+                {{ !$filter_padre_id ? 'disabled' : '' }}>
+                <option value="">Todas las Categorías Hijo</option>
+                @foreach(
+                    \App\Models\CategoriaHijo::where('categoria_padre_id', $filter_padre_id)->get()
+                    as $hijo
+                )
+                    <option value="{{ $hijo->id }}">{{ $hijo->nombre }}</option>
+                @endforeach
+            </select>
+
+            {{-- Filtro Subcategoría --}}
+            <select wire:model.live="filter_subcategoria_id"
+                class="border rounded px-3 py-2"
+                {{ !$filter_hijo_id ? 'disabled' : '' }}>
+                <option value="">Todas las Subcategorías</option>
+                @foreach(
+                    \App\Models\Subcategoria::where('categoria_hijo_id', $filter_hijo_id)->get()
+                    as $sub
+                )
+                    <option value="{{ $sub->id }}">{{ $sub->nombre }}</option>
+                @endforeach
+            </select>
+        </div>
         <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-gray-100">
                 <tr>
@@ -264,7 +327,8 @@ new class extends Component
 
             {{-- Categoría Padre --}}
             <select wire:model.live="categoria_padre_id"
-                class="w-full border rounded px-3 py-2 mb-2">
+                class="w-full border rounded px-3 py-2 mb-2 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                {{ $editingId ? 'disabled' : '' }}>
                 <option value="">Seleccionar Categoría Padre</option>
                 @foreach($this->padres as $padre)
                     <option value="{{ $padre->id }}">{{ $padre->nombre }}</option>
@@ -277,8 +341,8 @@ new class extends Component
             {{-- Categoría Hijo --}}
             <select wire:model.live="categoria_hijo_id"
                 wire:key="hijo-{{ $categoria_padre_id }}"
-                class="w-full border rounded px-3 py-2 mb-2"
-                {{ !$categoria_padre_id ? 'disabled' : '' }}
+                class="w-full border rounded px-3 py-2 mb-2 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                {{ !$categoria_padre_id || $editingId ? 'disabled' : '' }}
             >
                 <option value="">Seleccionar Categoría Hijo</option>
                 @foreach($this->hijos as $hijo)
@@ -291,8 +355,8 @@ new class extends Component
 
             {{-- Subcategoría --}}
             <select wire:model.live="subcategoria_id"
-                class="w-full border rounded px-3 py-2 mb-2"
-               {{ !$categoria_hijo_id ? 'disabled' : '' }}>
+                class="w-full border rounded px-3 py-2 mb-2 disabled:bg-gray-100 disabled:cursor-not-allowed"
+               {{ !$categoria_hijo_id || $editingId ? 'disabled' : '' }}>
                 <option value="">Seleccionar Subcategoría</option>
                 @foreach($this->subcategorias as $sub)
                     <option value="{{ $sub->id }}">{{ $sub->nombre }}</option>

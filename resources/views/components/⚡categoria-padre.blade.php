@@ -41,7 +41,16 @@ new class extends Component
 
     public function delete($id)
     {
-        CategoriaPadre::find($id)?->delete();
+        $categoria = CategoriaPadre::findOrFail($id);
+
+        if ($categoria->hijos()->exists()) {
+            session()->flash('error', 'No se puede eliminar la categoría porque tiene categorías hijas asociadas.');
+            return;
+        }
+
+        $categoria->delete();
+
+        session()->flash('success', 'Categoría padre eliminada correctamente.');
     }
 
     public function close()
@@ -63,6 +72,7 @@ new class extends Component
 ?>
 
 <div class="p-6">
+    <h2 class="text-2xl font-bold mb-4">Categorías Padre</h2>
 
     <button
         wire:click="open"
@@ -79,6 +89,18 @@ new class extends Component
                 <h2 class="text-xl font-bold mb-4">
                     Administración de Categorías Padre
                 </h2>
+
+                @if(session()->has('error'))
+                    <div class="bg-red-100 text-red-700 px-4 py-2 rounded mt-4 mb-4">
+                        {{ session('error') }}
+                    </div>
+                @endif
+
+                @if(session()->has('success'))
+                    <div class="bg-green-100 text-green-700 px-4 py-2 rounded mt-4 mb-4">
+                        {{ session('success') }}
+                    </div>
+                @endif
 
                 {{-- LISTADO --}}
                 <table class="w-full border mb-6">

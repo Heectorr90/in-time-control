@@ -62,7 +62,16 @@ new class extends Component
 
     public function delete($id)
     {
-        Subcategoria::find($id)?->delete();
+        $subcategoria = Subcategoria::findOrFail($id);
+
+        if ($subcategoria->equipos()->exists()) {
+            session()->flash('error', 'No se puede eliminar porque tiene equipos registrados.');
+            return;
+        }
+
+        $subcategoria->delete();
+
+        session()->flash('success', 'Subcategoría eliminada correctamente.');
     }
 
     public function getCategoriasProperty()
@@ -81,12 +90,26 @@ new class extends Component
 
 <div class="p-6">
 
+    <h2 class="text-2xl font-bold mb-4">Subcategorías</h2>
+
     <button
         wire:click="open"
         class="bg-green-600 text-white px-4 py-2 rounded-lg"
     >
         + Nueva Subcategoría
     </button>
+
+    @if(session()->has('error'))
+        <div class="bg-red-100 text-red-700 px-4 py-2 rounded mt-4 mb-4">
+            {{ session('error') }}
+        </div>
+    @endif
+
+    @if(session()->has('success'))
+        <div class="bg-green-100 text-green-700 px-4 py-2 rounded mt-4 mb-4">
+            {{ session('success') }}
+        </div>
+    @endif
 
     <table class="w-full mt-6 border">
         <thead class="bg-gray-200">
@@ -116,6 +139,7 @@ new class extends Component
 
                         <button
                             wire:click="delete({{ $subcategoria->id }})"
+                            onclick="confirm('¿Eliminar esta categoría?') || event.stopImmediatePropagation()"
                             class="bg-red-600 text-white px-2 py-1 rounded"
                         >
                             Eliminar

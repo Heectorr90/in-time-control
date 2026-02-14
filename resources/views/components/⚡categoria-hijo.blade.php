@@ -62,7 +62,16 @@ new class extends Component
 
     public function delete($id)
     {
-        CategoriaHijo::find($id)?->delete();
+        $categoria = CategoriaHijo::findOrFail($id);
+
+        if ($categoria->subcategorias()->exists()) {
+            session()->flash('error', 'No se puede eliminar porque tiene subcategorías asociadas.');
+            return;
+        }
+
+        $categoria->delete();
+
+        session()->flash('success', 'Categoría hijo eliminada correctamente.');
     }
 
     public function getPadresProperty()
@@ -80,12 +89,25 @@ new class extends Component
 ?>
 <div class="p-6">
 
+    <h2 class="text-2xl font-bold mb-4">Categorías Hijos</h2>
+
     <button
         wire:click="open"
         class="bg-green-600 text-white px-4 py-2 rounded-lg"
     >
         + Nueva Categoría Hijo
     </button>
+    @if(session()->has('error'))
+        <div class="bg-red-100 text-red-700 px-4 py-2 rounded mt-4 mb-4">
+            {{ session('error') }}
+        </div>
+    @endif
+
+    @if(session()->has('success'))
+        <div class="bg-green-100 text-green-700 px-4 py-2 rounded mt-4 mb-4">
+            {{ session('success') }}
+        </div>
+    @endif
 
     <table class="w-full mt-6 border">
         <thead class="bg-gray-200">
@@ -114,6 +136,7 @@ new class extends Component
 
                         <button
                             wire:click="delete({{ $hijo->id }})"
+                            onclick="confirm('¿Eliminar esta categoría?') || event.stopImmediatePropagation()"
                             class="bg-red-600 text-white px-2 py-1 rounded"
                         >
                             Eliminar
